@@ -144,3 +144,9 @@ long next235beven(long n, long b)
 
 } // namespace utils
 } // namespace cufinufft
+
+namespace hipfinufft {
+namespace utils {
+long next235beven(long n, long b) { return cufinufft::utils::next235beven(n, b); }
+} // namespace utils
+} // namespace hipfinufft

@@ -23,6 +23,7 @@ option(FINUFFT_STATIC_ANALYSIS "Run clang-tidy/cppcheck" OFF)
 option(FINUFFT_STATIC_LINKING "If ON builds the static finufft library, if OFF build a shared finufft library." ON)
 option(FINUFFT_USE_CPU "Whether to build the ordinary FINUFFT library (libfinufft)." ON)
 option(FINUFFT_USE_CUDA "Whether to build CUDA accelerated FINUFFT library (libcufinufft). This is completely independent of the main FINUFFT library" OFF)
+option(FINUFFT_USE_HIP "Whether to build the AMD/HIP accelerated FINUFFT library (libhipfinufft). Independent of FINUFFT_USE_CUDA; both can be ON simultaneously, in which case both libraries are built side-by-side." OFF)
 option(FINUFFT_USE_DUCC0 "Whether to use DUCC0 (instead of FFTW) for CPU FFTs" OFF)
 option(FINUFFT_USE_IWYU "Set CXX_INCLUDE_WHAT_YOU_USE on target (checker-only)" OFF)
 option(FINUFFT_USE_OPENMP "Whether to use OpenMP for parallelization. If disabled, the finufft library will be single threaded. This does not affect the choice of FFTW library." ON)
@@ -105,6 +106,17 @@ if(FINUFFT_USE_CUDA)
     list(APPEND INSTALL_TARGETS cufinufft)
 endif()
 
+if(FINUFFT_USE_HIP)
+    include(hip_setup)
+    add_subdirectory(src/hip)
+    if(BUILD_TESTING AND FINUFFT_BUILD_TESTS)
+        add_subdirectory(perftest/hip)
+        add_subdirectory(test/hip)
+    endif()
+
+    list(APPEND INSTALL_TARGETS hipfinufft)
+endif()
+
 # Add tests defined in their own directory
 if(BUILD_TESTING AND FINUFFT_USE_CPU AND FINUFFT_BUILD_TESTS)
     add_subdirectory(test)
@@ -117,6 +129,10 @@ endif()
 
 if(FINUFFT_BUILD_EXAMPLES AND FINUFFT_USE_CUDA)
     add_subdirectory(examples/cuda)
+endif()
+
+if(FINUFFT_BUILD_EXAMPLES AND FINUFFT_USE_HIP)
+    add_subdirectory(examples/hip)
 endif()
 
 if(FINUFFT_BUILD_FORTRAN)
@@ -141,6 +157,7 @@ message(STATUS "FINUFFT configuration summary:")
 message(STATUS "  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  FINUFFT_USE_CPU: ${FINUFFT_USE_CPU}")
 message(STATUS "  FINUFFT_USE_CUDA: ${FINUFFT_USE_CUDA}")
+message(STATUS "  FINUFFT_USE_HIP: ${FINUFFT_USE_HIP}")
 message(STATUS "  FINUFFT_USE_OPENMP: ${FINUFFT_USE_OPENMP}")
 message(STATUS "  FINUFFT_STATIC_LINKING: ${FINUFFT_STATIC_LINKING}")
 message(STATUS "  FINUFFT_POSITION_INDEPENDENT_CODE: ${FINUFFT_POSITION_INDEPENDENT_CODE}")
@@ -156,6 +173,7 @@ message(STATUS "  FINUFFT_FFTW_LIBRARIES: ${FINUFFT_FFTW_LIBRARIES}")
 message(STATUS "  FINUFFT_ARCH_FLAGS: ${FINUFFT_ARCH_FLAGS}")
 message(STATUS "  FINUFFT_USE_DUCC0: ${FINUFFT_USE_DUCC0}")
 message(STATUS "  CMAKE_CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
+message(STATUS "  CMAKE_HIP_ARCHITECTURES: ${CMAKE_HIP_ARCHITECTURES}")
 # gersemi: on
 
 if(FINUFFT_ENABLE_INSTALL)
@@ -185,6 +203,7 @@ if(FINUFFT_ENABLE_INSTALL)
             PATTERN "CMakeLists.txt" EXCLUDE
             PATTERN "README" EXCLUDE
             PATTERN "examples/cuda" EXCLUDE
+            PATTERN "examples/hip" EXCLUDE
         )
         if(FINUFFT_BUILD_FORTRAN)
             install(
@@ -197,6 +216,14 @@ if(FINUFFT_ENABLE_INSTALL)
     if(FINUFFT_USE_CUDA)
         install(
             DIRECTORY ${PROJECT_SOURCE_DIR}/examples/cuda
+            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/finufft/examples
+            PATTERN "README" EXCLUDE
+            PATTERN "CMakeLists.txt" EXCLUDE
+        )
+    endif()
+    if(FINUFFT_USE_HIP)
+        install(
+            DIRECTORY ${PROJECT_SOURCE_DIR}/examples/hip
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/finufft/examples
             PATTERN "README" EXCLUDE
             PATTERN "CMakeLists.txt" EXCLUDE

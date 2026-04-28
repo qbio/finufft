@@ -37,6 +37,11 @@ enum {
   FINUFFT_ERR_KERFORMULA_NOTVALID                  = 24,
   FINUFFT_ERR_UNKNOWN_EXCEPTION                    = 25,
   FINUFFT_ERR_EPS_TOO_SMALL                        = 26,
+  // GPU-runtime failure on the AMD/HIP backend (libhipfinufft).
+  // Mirrors FINUFFT_ERR_CUDA_FAILURE on the NVIDIA path. Defined as a
+  // distinct value so callers can disambiguate which runtime failed when
+  // both backends are linked into the same process.
+  FINUFFT_ERR_HIP_FAILURE                          = 27,
 };
 // clang-format on
 #endif
