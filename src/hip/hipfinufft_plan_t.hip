@@ -16,18 +16,15 @@
 #include <thrust/device_vector.h>
 
 static bool have_pool_support(const hipfinufft_opts &opts) {
-  DeviceSwitcher switcher(opts.gpu_device_id);
-  int supports_pools = 0;
-  hipDeviceGetAttribute(&supports_pools, hipDeviceAttributeMemoryPoolsSupported,
-                         opts.gpu_device_id);
-  static bool warned = false;
-  if (!warned && !supports_pools && opts.gpu_stream != nullptr) {
-    fprintf(stderr,
-            "[hipfinufft] Warning: hipMallocAsync not supported on this device. Use of "
-            "CUDA streams may not perform optimally.\n");
-    warned = true;
-  }
-  return supports_pools;
+  // hipMallocAsync (stream-ordered memory pools) is broken on at least
+  // gfx1200 (RX 9060 XT) / ROCm 7.1: pool memory reuse across plan
+  // create/destroy cycles produces silent data corruption (interp returns
+  // stale fk values; spreadinterponly_test fails with rel sup err ~1.5)
+  // and occasional GPU memory faults. Forcing the synchronous hipMalloc /
+  // hipFree path eliminates the issue with no functional change.
+  // Re-enable once the underlying driver issue is fixed and validated.
+  (void)opts;
+  return false;
 }
 
 template<typename T>
